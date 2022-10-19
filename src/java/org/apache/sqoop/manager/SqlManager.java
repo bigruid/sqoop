@@ -116,7 +116,7 @@ public abstract class SqlManager
   }
 
   /**
-  * Utilize the --columns option, if specified.
+  * Utilize the --columns option and order, if specified.
   * @param columns
   * @return the subset of columns which were specified by --columns option.
   */
@@ -125,13 +125,23 @@ public abstract class SqlManager
       return columns;
     }
     List<String> colNames = new ArrayList<String>();
-    for (String col : columns) {
-      String userColName = options.getColumnNameCaseInsensitive(col);
-      if (userColName != null) {
-        colNames.add(userColName);
+    for (String column : options.getColumns()) {
+      if (containsIgnoreCase(columns, column)) {
+        colNames.add(column);
       }
     }
     return colNames.toArray(new String[colNames.size()]);
+  }
+
+  protected boolean containsIgnoreCase(String[] columns, String col){
+    if (null != columns) {
+      for(String columnName : columns) {
+        if(columnName.equalsIgnoreCase(col)) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   @Override
