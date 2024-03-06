@@ -18,16 +18,6 @@
 
 package org.apache.sqoop.tool;
 
-import java.io.IOException;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Types;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.logging.Log;
@@ -36,10 +26,9 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.util.StringUtils;
-import org.apache.sqoop.avro.AvroSchemaMismatchException;
-
 import org.apache.sqoop.SqoopOptions;
 import org.apache.sqoop.SqoopOptions.InvalidOptionsException;
+import org.apache.sqoop.avro.AvroSchemaMismatchException;
 import org.apache.sqoop.cli.RelatedOptions;
 import org.apache.sqoop.cli.ToolOptions;
 import org.apache.sqoop.config.ConfigurationHelper;
@@ -58,8 +47,13 @@ import org.apache.sqoop.util.AppendUtils;
 import org.apache.sqoop.util.ClassLoaderStack;
 import org.apache.sqoop.util.ImportException;
 
-import static org.apache.sqoop.manager.SupportedManagers.MYSQL;
+import java.io.IOException;
+import java.sql.*;
+import java.util.List;
+import java.util.Map;
+
 import static org.apache.commons.lang3.StringUtils.startsWith;
+import static org.apache.sqoop.manager.SupportedManagers.MYSQL;
 
 /**
  * Tool that performs database imports to HDFS.
@@ -701,6 +695,10 @@ public class ImportTool extends BaseSqoopTool {
           .withLongOpt(APPEND_ARG)
           .create());
       importOpts.addOption(OptionBuilder
+              .withDescription("Split by mod remainder")
+              .withLongOpt(SPLIT_BY_MOD)
+              .create());
+      importOpts.addOption(OptionBuilder
           .withDescription("Imports data in delete mode")
           .withLongOpt(DELETE_ARG)
           .create());
@@ -936,6 +934,10 @@ public class ImportTool extends BaseSqoopTool {
 
         if (in.hasOption(APPEND_ARG)) {
           out.setAppendMode(true);
+        }
+
+        if (in.hasOption(SPLIT_BY_MOD)) {
+          out.setSplitByMod(true);
         }
 
         if (in.hasOption(DELETE_ARG)) {

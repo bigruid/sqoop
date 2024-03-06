@@ -18,39 +18,29 @@
 
 package org.apache.sqoop;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.sqoop.accumulo.AccumuloConstants;
+import org.apache.sqoop.lib.DelimiterSet;
+import org.apache.sqoop.lib.LargeObjectLoader;
+import org.apache.sqoop.mapreduce.mainframe.MainframeConfiguration;
+import org.apache.sqoop.mapreduce.parquet.ParquetJobConfiguratorImplementation;
+import org.apache.sqoop.tool.BaseSqoopTool;
+import org.apache.sqoop.tool.SqoopTool;
+import org.apache.sqoop.util.*;
+import org.apache.sqoop.util.password.CredentialProviderHelper;
+import org.apache.sqoop.validation.AbortOnFailureHandler;
+import org.apache.sqoop.validation.AbsoluteValidationThreshold;
+import org.apache.sqoop.validation.RowCountValidator;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
 import java.net.URLDecoder;
 import java.sql.Connection;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Properties;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.sqoop.accumulo.AccumuloConstants;
-import org.apache.sqoop.mapreduce.mainframe.MainframeConfiguration;
-import org.apache.sqoop.mapreduce.parquet.ParquetJobConfiguratorImplementation;
-import org.apache.sqoop.tool.BaseSqoopTool;
-import org.apache.sqoop.util.CredentialsUtil;
-import org.apache.sqoop.util.LoggingUtils;
-import org.apache.sqoop.util.SqoopJsonUtil;
-import org.apache.sqoop.util.password.CredentialProviderHelper;
-import org.apache.sqoop.validation.AbortOnFailureHandler;
-import org.apache.sqoop.validation.AbsoluteValidationThreshold;
-import org.apache.sqoop.validation.RowCountValidator;
-
-import org.apache.sqoop.lib.DelimiterSet;
-import org.apache.sqoop.lib.LargeObjectLoader;
-import org.apache.sqoop.tool.SqoopTool;
-import org.apache.sqoop.util.RandomHash;
-import org.apache.sqoop.util.StoredAsProperty;
+import java.util.*;
 
 import static org.apache.sqoop.Sqoop.SQOOP_RETHROW_PROPERTY;
 import static org.apache.sqoop.mapreduce.parquet.ParquetJobConfiguratorImplementation.HADOOP;
@@ -213,6 +203,7 @@ public class SqoopOptions implements Cloneable {
   private String hadoopMapRedHome; // not serialized to metastore.
   @StoredAsProperty("db.split.column") private String splitByCol;
   @StoredAsProperty("split.limit") private Integer splitLimit;
+  @StoredAsProperty("split.by.mod") private boolean splitByMod;
   @StoredAsProperty("db.where.clause") private String whereClause;
   @StoredAsProperty("db.query") private String sqlQuery;
   @StoredAsProperty("db.query.boundary") private String boundaryQuery;
@@ -1403,6 +1394,10 @@ public class SqoopOptions implements Cloneable {
   public void setSplitLimit(Integer splitLimit) {
     this.splitLimit = splitLimit;
   }
+
+  public Boolean getSplitByMod() { return splitByMod; }
+
+  public void setSplitByMod(Boolean splitByMod) { this.splitByMod=splitByMod; }
 
   public String getWhereClause() {
     return whereClause;

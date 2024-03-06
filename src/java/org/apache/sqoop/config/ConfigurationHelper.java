@@ -18,18 +18,16 @@
 
 package org.apache.sqoop.config;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.util.GenericOptionsParser;
-
+import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.sqoop.mapreduce.db.DBConfiguration;
 
-import org.apache.hadoop.util.ReflectionUtils;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.apache.sqoop.config.ConfigurationConstants.MAPREDUCE_FRAMEWORK_LOCAL;
 import static org.apache.sqoop.config.ConfigurationConstants.PROP_MAPREDUCE_FRAMEWORK_NAME;
@@ -218,7 +216,9 @@ public final class ConfigurationHelper {
   public static void setSplitLimit(Configuration config, long splitLimit) {
       config.setLong(ConfigurationConstants.PROP_SPLIT_LIMIT, splitLimit);
   }
-
+  public static void setSplitByMod(Configuration config, boolean splitByMod) {
+    config.setBoolean(ConfigurationConstants.PROP_SPLIT_BY_MOD, splitByMod);
+  }
   /**
    * Retrieves the size of single hadoop input split.
    *
@@ -227,6 +227,9 @@ public final class ConfigurationHelper {
    */
   public static long getSplitLimit(Configuration config) {
       return config.getInt(ConfigurationConstants.PROP_SPLIT_LIMIT, -1);
+  }
+  public static boolean getSplitByMod(Configuration config) {
+    return config.getBoolean(ConfigurationConstants.PROP_SPLIT_BY_MOD, false);
   }
   public static boolean isLocalJobTracker(Configuration conf) {
     String frameworkName = conf.get(PROP_MAPREDUCE_FRAMEWORK_NAME);

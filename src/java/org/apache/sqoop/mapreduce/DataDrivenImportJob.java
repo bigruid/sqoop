@@ -18,10 +18,6 @@
 
 package org.apache.sqoop.mapreduce;
 
-import java.io.File;
-import java.io.IOException;
-import java.sql.SQLException;
-
 import org.apache.avro.Schema;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.logging.Log;
@@ -30,24 +26,25 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.OutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
-import org.apache.sqoop.mapreduce.hcat.SqoopHCatUtilities;
-
 import org.apache.sqoop.SqoopOptions;
 import org.apache.sqoop.config.ConfigurationHelper;
 import org.apache.sqoop.lib.LargeObjectLoader;
 import org.apache.sqoop.manager.ConnManager;
 import org.apache.sqoop.manager.ImportJobContext;
-import org.apache.sqoop.mapreduce.ImportJobBase;
 import org.apache.sqoop.mapreduce.db.DBConfiguration;
 import org.apache.sqoop.mapreduce.db.DataDrivenDBInputFormat;
+import org.apache.sqoop.mapreduce.hcat.SqoopHCatUtilities;
 import org.apache.sqoop.mapreduce.parquet.ParquetImportJobConfigurator;
 import org.apache.sqoop.orm.AvroSchemaGenerator;
+
+import java.io.File;
+import java.io.IOException;
+import java.sql.SQLException;
 
 import static org.apache.sqoop.mapreduce.parquet.ParquetConstants.SQOOP_PARQUET_AVRO_SCHEMA_KEY;
 
@@ -302,7 +299,10 @@ public class DataDrivenImportJob extends ImportJobBase {
         org.apache.sqoop.config.ConfigurationHelper.setSplitLimit(
           job.getConfiguration(), options.getSplitLimit());
       }
-
+      if (options.getSplitByMod()) {
+        org.apache.sqoop.config.ConfigurationHelper.setSplitByMod(
+                job.getConfiguration(), options.getSplitByMod());
+      }
       LOG.debug("Using InputFormat: " + inputFormatClass);
       job.setInputFormatClass(inputFormatClass);
     } finally {

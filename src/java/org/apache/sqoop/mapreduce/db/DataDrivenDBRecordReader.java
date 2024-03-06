@@ -18,14 +18,14 @@
 package org.apache.sqoop.mapreduce.db;
 
 
-import java.io.IOException;
-import java.sql.Connection;
-import java.sql.SQLException;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sqoop.mapreduce.DBWritable;
+
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.SQLException;
 
 /**
  * A RecordReader that reads records from a SQL table,
@@ -85,10 +85,11 @@ public class DataDrivenDBRecordReader<T extends DBWritable>
     // Build the WHERE clauses associated with the data split first.
     // We need them in both branches of this function.
     StringBuilder conditionClauses = new StringBuilder();
-    conditionClauses.append("( ").append(lowerClause);
-    conditionClauses.append(" ) AND ( ").append(upperClause);
-    conditionClauses.append(" )");
-
+    conditionClauses.append("( ").append(lowerClause).append(" )");
+    if (!upperClause.isEmpty()) {
+      conditionClauses.append(" AND ( ").append(upperClause);
+      conditionClauses.append(" )");
+    }
     if (dbConf.getInputQuery() == null) {
       // We need to generate the entire query.
       query.append("SELECT ");

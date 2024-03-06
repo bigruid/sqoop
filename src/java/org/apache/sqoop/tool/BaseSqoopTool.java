@@ -18,10 +18,29 @@
 
 package org.apache.sqoop.tool;
 
-import static java.lang.String.format;
-import static org.apache.commons.lang3.StringUtils.isBlank;
-import static org.apache.sqoop.mapreduce.parquet.ParquetConstants.PARQUET_JOB_CONFIGURATOR_IMPLEMENTATION_KEY;
-import static org.apache.sqoop.mapreduce.parquet.ParquetJobConfiguratorImplementation.valueOf;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.OptionBuilder;
+import org.apache.commons.cli.OptionGroup;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.util.StringUtils;
+import org.apache.sqoop.ConnFactory;
+import org.apache.sqoop.SqoopOptions;
+import org.apache.sqoop.SqoopOptions.IncrementalMode;
+import org.apache.sqoop.SqoopOptions.InvalidOptionsException;
+import org.apache.sqoop.cli.RelatedOptions;
+import org.apache.sqoop.cli.ToolOptions;
+import org.apache.sqoop.lib.DelimiterSet;
+import org.apache.sqoop.manager.ConnManager;
+import org.apache.sqoop.manager.SupportedManagers;
+import org.apache.sqoop.mapreduce.hcat.SqoopHCatUtilities;
+import org.apache.sqoop.mapreduce.parquet.ParquetJobConfiguratorFactory;
+import org.apache.sqoop.mapreduce.parquet.ParquetJobConfiguratorImplementation;
+import org.apache.sqoop.metastore.JobData;
+import org.apache.sqoop.util.CredentialsUtil;
+import org.apache.sqoop.util.LoggingUtils;
+import org.apache.sqoop.util.password.CredentialProviderHelper;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -31,30 +50,10 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Properties;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.OptionBuilder;
-import org.apache.commons.cli.OptionGroup;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.util.StringUtils;
-import org.apache.sqoop.manager.SupportedManagers;
-import org.apache.sqoop.mapreduce.hcat.SqoopHCatUtilities;
-import org.apache.sqoop.mapreduce.parquet.ParquetJobConfiguratorFactory;
-import org.apache.sqoop.mapreduce.parquet.ParquetJobConfiguratorImplementation;
-import org.apache.sqoop.util.CredentialsUtil;
-import org.apache.sqoop.util.LoggingUtils;
-import org.apache.sqoop.util.password.CredentialProviderHelper;
-
-import org.apache.sqoop.ConnFactory;
-import org.apache.sqoop.SqoopOptions;
-import org.apache.sqoop.SqoopOptions.IncrementalMode;
-import org.apache.sqoop.SqoopOptions.InvalidOptionsException;
-import org.apache.sqoop.cli.RelatedOptions;
-import org.apache.sqoop.cli.ToolOptions;
-import org.apache.sqoop.lib.DelimiterSet;
-import org.apache.sqoop.manager.ConnManager;
-import org.apache.sqoop.metastore.JobData;
+import static java.lang.String.format;
+import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.sqoop.mapreduce.parquet.ParquetConstants.PARQUET_JOB_CONFIGURATOR_IMPLEMENTATION_KEY;
+import static org.apache.sqoop.mapreduce.parquet.ParquetJobConfiguratorImplementation.valueOf;
 
 /**
  * Layer on top of SqoopTool that provides some basic common code
@@ -101,6 +100,7 @@ public abstract class BaseSqoopTool extends org.apache.sqoop.tool.SqoopTool {
   public static final String WAREHOUSE_DIR_ARG = "warehouse-dir";
   public static final String TARGET_DIR_ARG = "target-dir";
   public static final String APPEND_ARG = "append";
+  public static final String SPLIT_BY_MOD = "split-by-mod";
   public static final String DELETE_ARG = "delete-target-dir";
   public static final String DELETE_COMPILE_ARG = "delete-compile-dir";
   public static final String NULL_STRING = "null-string";

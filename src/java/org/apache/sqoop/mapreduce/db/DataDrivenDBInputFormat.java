@@ -17,17 +17,6 @@
  */
 package org.apache.sqoop.mapreduce.db;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Types;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configurable;
@@ -38,11 +27,16 @@ import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.RecordReader;
-import org.apache.sqoop.mapreduce.DBWritable;
-
 import org.apache.sqoop.config.ConfigurationHelper;
-import org.apache.sqoop.mapreduce.db.DataDrivenDBRecordReader;
+import org.apache.sqoop.mapreduce.DBWritable;
 import org.apache.sqoop.validation.ValidationException;
+
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * A InputFormat that reads input data from an SQL table.
@@ -67,7 +61,7 @@ public class DataDrivenDBInputFormat<T extends DBWritable>
    * @return the DBSplitter implementation to use to divide the table/query
    * into InputSplits.
    */
-  protected DBSplitter getSplitter(int sqlDataType) {
+  protected DBSplitter getSplitter(int sqlDataType, long splitLimit) {
     return getSplitter(sqlDataType, 0);
   }
 
@@ -75,12 +69,15 @@ public class DataDrivenDBInputFormat<T extends DBWritable>
    * @return the DBSplitter implementation to use to divide the table/query
    * into InputSplits.
    */
-  protected DBSplitter getSplitter(int sqlDataType, long splitLimit) {
+  protected DBSplitter getSplitter(int sqlDataType, long splitLimit, boolean splitByMod) {
     switch (sqlDataType) {
     case Types.NUMERIC:
     case Types.DECIMAL:
       if(splitLimit >= 0) {
         throw new IllegalArgumentException("split-limit is supported only with Integer and Date columns");
+      }
+      if(splitByMod) {
+        throw new IllegalArgumentException("split-by-mod is supported only with Integer columns");
       }
       return new BigDecimalSplitter();
 
@@ -88,6 +85,9 @@ public class DataDrivenDBInputFormat<T extends DBWritable>
     case Types.BOOLEAN:
       if(splitLimit >= 0) {
         throw new IllegalArgumentException("split-limit is supported only with Integer and Date columns");
+      }
+      if(splitByMod) {
+        throw new IllegalArgumentException("split-by-mod is supported only with Integer columns");
       }
       return new BooleanSplitter();
 
@@ -103,12 +103,18 @@ public class DataDrivenDBInputFormat<T extends DBWritable>
       if(splitLimit >= 0) {
         throw new IllegalArgumentException("split-limit is supported only with Integer and Date columns");
       }
+      if(splitByMod) {
+        throw new IllegalArgumentException("split-by-mod is supported only with Integer columns");
+      }
       return new FloatSplitter();
 
     case Types.NVARCHAR:
     case Types.NCHAR:
       if(splitLimit >= 0) {
         throw new IllegalArgumentException("split-limit is supported only with Integer and Date columns");
+      }
+      if(splitByMod) {
+        throw new IllegalArgumentException("split-by-mod is supported only with Integer columns");
       }
       return new NTextSplitter();
 
@@ -118,11 +124,17 @@ public class DataDrivenDBInputFormat<T extends DBWritable>
       if(splitLimit >= 0) {
          throw new IllegalArgumentException("split-limit is supported only with Integer and Date columns");
       }
+      if(splitByMod) {
+        throw new IllegalArgumentException("split-by-mod is supported only with Integer columns");
+      }
       return new TextSplitter();
 
     case Types.DATE:
     case Types.TIME:
     case Types.TIMESTAMP:
+      if(splitByMod) {
+        throw new IllegalArgumentException("split-by-mod is supported only with Integer columns");
+      }
       return new DateSplitter();
 
     default:
@@ -130,6 +142,9 @@ public class DataDrivenDBInputFormat<T extends DBWritable>
       // BLOB, ARRAY, STRUCT, REF, DATALINK, and JAVA_OBJECT.
       if(splitLimit >= 0) {
         throw new IllegalArgumentException("split-limit is supported only with Integer and Date columns");
+      }
+      if(splitByMod) {
+        throw new IllegalArgumentException("split-by-mod is supported only with Integer columns");
       }
       return null;
     }
@@ -144,6 +159,8 @@ public class DataDrivenDBInputFormat<T extends DBWritable>
 
     long splitLimit = org.apache.sqoop.config.ConfigurationHelper
       .getSplitLimit(job.getConfiguration());
+    boolean splitByMod = ConfigurationHelper
+            .getSplitByMod(job.getConfiguration());
     // If user do not forced us to use his boundary query and we don't have to
     // bacause there is only one mapper we will return single split that
     // separates nothing. This can be considerably more optimal for a large
@@ -180,7 +197,7 @@ public class DataDrivenDBInputFormat<T extends DBWritable>
           sqlDataType = Types.BIGINT;
       }
 
-      DBSplitter splitter = getSplitter(sqlDataType, splitLimit);
+      DBSplitter splitter = getSplitter(sqlDataType, splitLimit, splitByMod);
       if (null == splitter) {
         throw new IOException("Sqoop does not have the splitter for the given"
           + " SQL data type. Please use either different split column (argument"
@@ -351,8 +368,12 @@ public class DataDrivenDBInputFormat<T extends DBWritable>
       this.lowerBoundClause = lower;
       this.upperBoundClause = upper;
 
-      LOG.debug("Creating input split with lower bound '" + lower
-        + "' and upper bound '" + upper + "'");
+      if (upper.isEmpty()) {
+        LOG.info("Creating input split with clause '" + lower + "'");
+      } else {
+        LOG.info("Creating input split with lower bound '" + lower
+                + "' and upper bound '" + upper + "'");
+      }
     }
 
     /**
@@ -386,7 +407,11 @@ public class DataDrivenDBInputFormat<T extends DBWritable>
 
     @Override
     public String toString() {
-      return this.lowerBoundClause + " AND " + this.upperBoundClause;
+      if (this.upperBoundClause.isEmpty()) {
+        return this.lowerBoundClause;
+      } else {
+        return this.lowerBoundClause + " AND " + this.upperBoundClause;
+      }
     }
   }
 

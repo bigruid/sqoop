@@ -92,6 +92,11 @@ public final class ConfigurationConstants {
   public static final String PROP_SPLIT_LIMIT = "split.limit";
 
   /**
+   * The Configuration property identifying split by mod or not.
+   */
+  public static final String PROP_SPLIT_BY_MOD = "split.by.mod";
+
+  /**
    * Enable avro logical types (decimal support only).
    */
   public static final String PROP_ENABLE_AVRO_LOGICAL_TYPE_DECIMAL = "sqoop.avro.logical_types.decimal.enable";

@@ -17,17 +17,16 @@
  */
 package org.apache.sqoop.mapreduce.db;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.InputSplit;
-
 import org.apache.sqoop.config.ConfigurationHelper;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Implement DBSplitter over integer values.
@@ -48,6 +47,11 @@ public class IntegerSplitter implements DBSplitter  {
       int numSplits = ConfigurationHelper.getConfNumMaps(conf);
       if (numSplits < 1) {
         numSplits = 1;
+      }
+
+      boolean splitByMod = org.apache.sqoop.config.ConfigurationHelper.getSplitByMod(conf);
+      if (splitByMod) {
+        return splitByMod(numSplits,results,colName);
       }
 
       if (results.getString(1) == null && results.getString(2) == null) {
@@ -184,4 +188,33 @@ public class IntegerSplitter implements DBSplitter  {
 
       return splits;
     }
+
+  public List<InputSplit> splitByMod(long numSplits, ResultSet results,
+                                String colName) throws SQLException {
+
+    if (results.getString(1) == null && results.getString(2) == null) {
+      // Range is null to null. Return a null split accordingly.
+      List<InputSplit> splits = new ArrayList<InputSplit>();
+      splits.add(new DataDrivenDBInputFormat.DataDrivenDBInputSplit(
+              colName + " IS NULL", colName + " IS NULL"));
+      return splits;
+    }
+
+    List<InputSplit> splits = new ArrayList<InputSplit>();
+
+    String clause = "mod(" + colName + "," + numSplits + ")";
+
+    for (long i = 0; i < numSplits; i++) {
+      splits.add(new DataDrivenDBInputFormat.DataDrivenDBInputSplit(
+              clause + "=" + i, ""));
+    }
+
+    if (results.getString(1) == null || results.getString(2) == null) {
+      // At least one extrema is null; add a null split.
+      splits.add(new DataDrivenDBInputFormat.DataDrivenDBInputSplit(
+              colName + " IS NULL", colName + " IS NULL"));
+    }
+
+    return splits;
+  }
 }
